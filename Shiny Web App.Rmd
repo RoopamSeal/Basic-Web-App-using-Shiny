@@ -1,0 +1,93 @@
+---
+title: "Shiny Web App"
+author: "Roopam Seal"
+date: "2025-04-24"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(shiny)
+library(ggplot2)
+library(dplyr)
+
+ui <- fluidPage(
+  titlePanel("Exploring the mtcars Dataset"),
+
+  sidebarLayout(
+    sidebarPanel(
+      selectInput("x_variable", "Select X-axis Variable:",
+                  choices = names(mtcars),
+                  selected = "mpg"),
+      selectInput("y_variable", "Select Y-axis Variable:",
+                  choices = names(mtcars),
+                  selected = "wt"),
+      selectInput("color_variable", "Select Color Variable (Optional):",
+                  choices = c("None", names(mtcars)),
+                  selected = "None"),
+      sliderInput("point_size", "Point Size:", min = 1, max = 10, value = 3),
+      checkboxInput("show_labels", "Show Data Labels", FALSE)
+    ),
+
+    mainPanel(
+      h3("Scatter Plot of mtcars Data"),
+      plotOutput("scatter_plot"),
+      br(),
+      h3("Summary Statistics"),
+      verbatimTextOutput("summary_output"),
+      br(),
+      h3("First Few Rows of the Dataset"),
+      tableOutput("head_table")
+    )
+  )
+)
+
+server <- function(input, output) {
+  # Create the scatter plot
+  output$scatter_plot <- renderPlot({
+    x_var <- input$x_variable
+    y_var <- input$y_variable
+    color_var <- input$color_variable
+
+    p <- ggplot(mtcars, aes_string(x = x_var, y = y_var)) +
+      geom_point(size = input$point_size) +
+      labs(title = paste("Scatter Plot of", y_var, "vs.", x_var),
+           x = x_var,
+           y = y_var) +
+      theme_minimal()
+
+    if (color_var != "None") {
+      p <- p + aes_string(color = color_var)
+    }
+
+    if (input$show_labels) {
+      p <- p + geom_text(aes(label = rownames(mtcars)), vjust = -0.5, hjust = 0.5, size = 3)
+    }
+
+    return(p)
+  })
+
+  output$summary_output <- renderPrint({
+    selected_vars <- c(input$x_variable, input$y_variable)
+    if (input$color_variable != "None") {
+      selected_vars <- c(selected_vars, input$color_variable)
+    }
+    summary(mtcars[, selected_vars])
+  })
+
+  output$head_table <- renderTable({
+    head(mtcars)
+  })
+}
+
+shinyApp(ui = ui, server = server)
+
+install.packages('rsconnect')
+
+
+
+```
+
